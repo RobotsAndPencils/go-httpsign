@@ -1,6 +1,8 @@
 # go-httpsign
 Go middleware for signing and verifying http requests via HMAC SHA256.
 
+[![Build Status](https://magnum.travis-ci.com/RobotsAndPencils/go-httpsign.svg?token=ZAkR8isq6gkcxsuaUiqi&branch=master)](https://magnum.travis-ci.com/RobotsAndPencils/go-httpsign)
+
 ### Installing
 
     go get github.com/RobotsAndPencils/go-httpsign
