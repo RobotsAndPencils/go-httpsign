@@ -53,8 +53,6 @@ The library verifies that the time difference between generation of the signatur
     make init
     make test
 
-Made with by [Robots & Pencils]
-
 ### Contact
 
 [![Robots & Pencils Logo](http://f.cl.ly/items/2W3n1r2R0j2p2b3n3j3c/rnplogo.png)](http://www.robotsandpencils.com)
