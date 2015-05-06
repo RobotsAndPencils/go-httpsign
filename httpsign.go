@@ -23,6 +23,7 @@ type HttpSign struct {
 	HeaderName       string
 	SecondsAllowance int
 	Key              []byte
+	DisableVerify    bool // Supports testing by disabling the checking in Verify()
 }
 
 // New returns a pointer to a HttpSign object configured with the key and with
@@ -59,6 +60,14 @@ func (hs *HttpSign) SignToProxy(h http.Handler, v GetValue) http.Handler {
 func (hs *HttpSign) Verify(h http.Handler, v GetValue) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get(hs.HeaderName)
+		if hs.DisableVerify {
+			if header == "" {
+				hs.writeInvalid(w)
+			} else {
+				h.ServeHTTP(w, r)
+			}
+			return
+		}
 		expectedSignature, expectedEpoch, err := parseHeader(header)
 		if err != nil || time.Now().Unix() > expectedEpoch+int64(hs.SecondsAllowance) {
 			hs.writeInvalid(w)

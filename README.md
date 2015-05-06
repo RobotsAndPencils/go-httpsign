@@ -47,6 +47,17 @@ The library verifies that the time difference between generation of the signatur
     http.Handle("/foo", hs.Verify(h, getValue))
 
 
+#### Testing
+
+    key := []byte("does not matter")
+    hs := httpsign.New(key)
+    hs.DisableVerify = true
+
+Adding the Verify() middleware can make it really annoying to test a local service.  You can optionally set
+`DisableVerify` to `true` in order to simplify the Verify() handler such that it looks for the signature header but
+does not validate its value.
+
+
 ### Contributing
 
     git clone git@github.com:RobotsAndPencils/go-httpsign.git
