@@ -29,8 +29,8 @@ func TestFormHeader(t *testing.T) {
 	assert := assert.New(t)
 	value := randomString(25)
 	key := []byte(randomString(100))
-	signature := calcHMAC(key, value)
 	epoch := time.Now().Unix()
+	signature := calcHMAC(key, value, epoch)
 
 	encodedSignature := base64.StdEncoding.EncodeToString([]byte(signature))
 	expectedHeader := fmt.Sprintf("%s;%d", encodedSignature, epoch)
@@ -43,8 +43,8 @@ func TestGenerateHeaderValue(t *testing.T) {
 	value := randomString(25)
 	key := []byte(randomString(100))
 	hs := New(key)
-	signature := calcHMAC(key, value)
 	epoch := time.Now().Unix()
+	signature := calcHMAC(key, value, epoch)
 	expectedHeader := formHeader(signature, epoch)
 	header := hs.GenerateHeaderValue(value)
 	assert.Equal(expectedHeader, header)
@@ -55,23 +55,27 @@ func TestSignToProxy(t *testing.T) {
 	value := randomString(25)
 	key := []byte(randomString(100))
 	hs := New(key)
-	signature := calcHMAC(key, value)
 	epoch := time.Now().Unix()
+	signature := calcHMAC(key, value, epoch)
 	expectedHeader := formHeader(signature, epoch)
 
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// handle time race condidition if we are right on the second boundary
-		if epoch != time.Now().Unix() {
-			expectedHeader = formHeader(signature, epoch)
-		}
-
 		h := r.Header.Get(hs.HeaderName)
 		fmt.Println(h)
+
 		assert.Equal(expectedHeader, h)
+
+		// force a delay to make sure we can handle latency in the signatures
+		time.Sleep(1100 * time.Millisecond)
 
 		s, e, err := parseHeader(h)
 		assert.NoError(err)
+
+		// recalculate signature, assume value was passed
+		calcSignature := calcHMAC(key, value, e)
+		assert.Equal(calcSignature, signature)
 		assert.Equal(signature, s)
+		assert.Equal(epoch, e)
 		assert.True(time.Now().Unix() < e+int64(6))
 		w.WriteHeader(http.StatusOK)
 	})

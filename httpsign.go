@@ -43,8 +43,8 @@ func New(key []byte) *HttpSign {
 func (hs *HttpSign) SignToProxy(h http.Handler, v GetValue) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		value := v(w, r)
-		signature := calcHMAC(hs.Key, value)
 		epoch := time.Now().Unix()
+		signature := calcHMAC(hs.Key, value, epoch)
 		r.Header.Add(hs.HeaderName, formHeader(signature, epoch))
 		h.ServeHTTP(w, r)
 	})
@@ -66,7 +66,7 @@ func (hs *HttpSign) Verify(h http.Handler, v GetValue) http.Handler {
 		}
 
 		value := v(w, r)
-		signature := calcHMAC(hs.Key, value)
+		signature := calcHMAC(hs.Key, value, expectedEpoch)
 
 		if signature != expectedSignature {
 			hs.writeInvalid(w)
@@ -80,8 +80,8 @@ func (hs *HttpSign) Verify(h http.Handler, v GetValue) http.Handler {
 // GenerateHeaderValue takes a content string, calculates an HMAC and returns
 // a properly formated header value including the epoch timestamp
 func (hs *HttpSign) GenerateHeaderValue(value string) string {
-	signature := calcHMAC(hs.Key, value)
 	epoch := time.Now().Unix()
+	signature := calcHMAC(hs.Key, value, epoch)
 	header := formHeader(signature, epoch)
 	return header
 }
@@ -91,15 +91,15 @@ func (hs *HttpSign) writeInvalid(w http.ResponseWriter) {
 	w.Write([]byte(hs.HeaderName + " invalid"))
 }
 
-func calcHMAC(key []byte, value string) string {
+func calcHMAC(key []byte, value string, epoch int64) string {
 	mac := hmac.New(sha256.New, key)
-	mac.Write(formMessage(value))
+	mac.Write(formMessage(value, epoch))
 	signature := mac.Sum(nil)
 	return string(signature)
 }
 
-func formMessage(value string) []byte {
-	return []byte(fmt.Sprintf("%s%d", value, time.Now().Unix()))
+func formMessage(value string, epoch int64) []byte {
+	return []byte(fmt.Sprintf("%s%d", value, epoch))
 }
 
 func formHeader(signature string, epoch int64) string {
