@@ -54,8 +54,8 @@ The library verifies that the time difference between generation of the signatur
     hs.DisableVerify = true
 
 Adding the Verify() middleware can make it really annoying to test a local service.  You can optionally set
-`DisableVerify` to `true` in order to simplify the Verify() handler such that it looks for the signature header but
-does not validate its value.
+`DisableVerify` to `true` in order to simplify the Verify() handler such that it always determines the request is valid,
+regardless wether the signaturate header is valid or even present.
 
 
 ### Contributing
