@@ -128,7 +128,43 @@ func TestVerify(t *testing.T) {
 	assert.Nil(err)
 	defer resp.Body.Close()
 	assert.Equal(http.StatusOK, resp.StatusCode)
+}
 
+func TestVerifyWhenDisabled(t *testing.T) {
+	assert := assert.New(t)
+	value := randomString(25)
+	key := []byte(randomString(100))
+	hs := New(key)
+	hs.DisableVerify = true
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	v := func(w http.ResponseWriter, r *http.Request) string {
+		return value
+	}
+
+	ts := httptest.NewServer(hs.Verify(h, v))
+	defer ts.Close()
+
+	// make request with no header
+	req, err := http.NewRequest("GET", ts.URL, nil)
+	assert.Nil(err)
+	resp, err := http.DefaultClient.Do(req)
+	assert.Nil(err)
+	defer resp.Body.Close()
+	assert.Equal(http.StatusOK, resp.StatusCode)
+
+	// make request with a bad header
+	header := hs.GenerateHeaderValue("some random value")
+	req, err = http.NewRequest("GET", ts.URL, nil)
+	assert.Nil(err)
+	req.Header.Set(hs.HeaderName, header)
+	resp, err = http.DefaultClient.Do(req)
+	assert.Nil(err)
+	defer resp.Body.Close()
+	assert.Equal(http.StatusOK, resp.StatusCode)
 }
 
 func randomString(size int) string {
