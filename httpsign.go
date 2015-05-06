@@ -61,11 +61,7 @@ func (hs *HttpSign) Verify(h http.Handler, v GetValue) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get(hs.HeaderName)
 		if hs.DisableVerify {
-			if header == "" {
-				hs.writeInvalid(w)
-			} else {
-				h.ServeHTTP(w, r)
-			}
+			h.ServeHTTP(w, r)
 			return
 		}
 		expectedSignature, expectedEpoch, err := parseHeader(header)

@@ -154,18 +154,10 @@ func TestVerifyWhenDisabled(t *testing.T) {
 	resp, err := http.DefaultClient.Do(req)
 	assert.Nil(err)
 	defer resp.Body.Close()
-	assert.Equal(http.StatusBadRequest, resp.StatusCode)
-
-	header := hs.GenerateHeaderValue(value)
-	req, err = http.NewRequest("GET", ts.URL, nil)
-	assert.Nil(err)
-	req.Header.Set(hs.HeaderName, header)
-	resp, err = http.DefaultClient.Do(req)
-	assert.Nil(err)
-	defer resp.Body.Close()
 	assert.Equal(http.StatusOK, resp.StatusCode)
 
-	header = hs.GenerateHeaderValue("some random value")
+	// make request with a bad header
+	header := hs.GenerateHeaderValue("some random value")
 	req, err = http.NewRequest("GET", ts.URL, nil)
 	assert.Nil(err)
 	req.Header.Set(hs.HeaderName, header)
