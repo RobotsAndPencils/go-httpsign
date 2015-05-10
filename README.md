@@ -26,7 +26,7 @@ The library verifies that the time difference between generation of the signatur
     // It must be something you send, like another header that is
     // agreed upon
     content := "the value of the content you will sign"
-    header := hs.GenerateHeaderValue(value)
+    header := hs.GenerateHeaderValue(content)
     req, err = http.NewRequest("GET", url, nil)
     req.Header.Set(hs.HeaderName, header)
     resp, err = http.DefaultClient.Do(req)
