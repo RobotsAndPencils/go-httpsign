@@ -20,6 +20,13 @@ The library verifies that the time difference between generation of the signatur
 
     hs.SecondsAllowance = 10    // to set to 10 seconds
 
+You can specify a "log hook" function that gets called whenever a failure happens in the Verify() handler.  This helps
+debugging deployments when keys and clocks do not match up.
+
+    hs.LookHook = func(msg string) {
+        log.Printf("HTTPSIGN ERROR: %s\n", msg)
+    }
+
 #### A client making a signed request
 
     // content is the value of the content to sign

@@ -18,12 +18,16 @@ import (
 // must be agreed upon by both parties.
 type GetValue func(w http.ResponseWriter, r *http.Request) string
 
+// A function to call for logging problems, currently only used in Verify().
+type LogHook func(msg string)
+
 // HttpSign is the main package object
 type HttpSign struct {
 	HeaderName       string
 	SecondsAllowance int
 	Key              []byte
 	DisableVerify    bool // Supports testing by disabling the checking in Verify()
+	LogHook          LogHook
 }
 
 // New returns a pointer to a HttpSign object configured with the key and with
@@ -35,6 +39,12 @@ func New(key []byte) *HttpSign {
 		Key:              key,
 	}
 	return &httpSign
+}
+
+func (hs *HttpSign) log(msgPattern string, args ...interface{}) {
+	if hs.LogHook != nil {
+		hs.LogHook(fmt.Sprintf(msgPattern, args...))
+	}
 }
 
 // SignToProxy is HTTP middleware intended to be used by a proxy server that
@@ -65,7 +75,14 @@ func (hs *HttpSign) Verify(h http.Handler, v GetValue) http.Handler {
 			return
 		}
 		expectedSignature, expectedEpoch, err := parseHeader(header)
-		if err != nil || time.Now().Unix() > expectedEpoch+int64(hs.SecondsAllowance) {
+		if err != nil {
+			hs.log("Unable to parse header '%s'", header)
+			hs.writeInvalid(w)
+			return
+		}
+		now := time.Now().Unix()
+		if now > expectedEpoch+int64(hs.SecondsAllowance) {
+			hs.log("Stale timestamp %d (now=%d, allowance=%d)", expectedEpoch, now, hs.SecondsAllowance)
 			hs.writeInvalid(w)
 			return
 		}
@@ -74,6 +91,7 @@ func (hs *HttpSign) Verify(h http.Handler, v GetValue) http.Handler {
 		signature := calcHMAC(hs.Key, value, expectedEpoch)
 
 		if signature != expectedSignature {
+			hs.log("Signature mismatch %s (calculated=%s, header=%s)", expectedSignature, signature, header)
 			hs.writeInvalid(w)
 			return
 		}
