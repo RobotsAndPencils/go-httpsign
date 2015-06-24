@@ -19,7 +19,7 @@ import (
 type GetValue func(w http.ResponseWriter, r *http.Request) string
 
 // A function to call for logging problems, currently only used in Verify().
-type LogHook func(msg string)
+type LogHook func(r *http.Request, msg string)
 
 // HttpSign is the main package object
 type HttpSign struct {
@@ -41,9 +41,9 @@ func New(key []byte) *HttpSign {
 	return &httpSign
 }
 
-func (hs *HttpSign) log(msgPattern string, args ...interface{}) {
+func (hs *HttpSign) log(r *http.Request, msgPattern string, args ...interface{}) {
 	if hs.LogHook != nil {
-		hs.LogHook(fmt.Sprintf(msgPattern, args...))
+		hs.LogHook(r, fmt.Sprintf(msgPattern, args...))
 	}
 }
 
@@ -76,13 +76,13 @@ func (hs *HttpSign) Verify(h http.Handler, v GetValue) http.Handler {
 		}
 		expectedSignature, expectedEpoch, err := parseHeader(header)
 		if err != nil {
-			hs.log("Unable to parse header '%s'", header)
+			hs.log(r, "Unable to parse header '%s'", header)
 			hs.writeInvalid(w)
 			return
 		}
 		now := time.Now().Unix()
 		if now > expectedEpoch+int64(hs.SecondsAllowance) {
-			hs.log("Stale timestamp %d (now=%d, allowance=%d)", expectedEpoch, now, hs.SecondsAllowance)
+			hs.log(r, "Stale timestamp %d (now=%d, allowance=%d)", expectedEpoch, now, hs.SecondsAllowance)
 			hs.writeInvalid(w)
 			return
 		}
@@ -91,7 +91,7 @@ func (hs *HttpSign) Verify(h http.Handler, v GetValue) http.Handler {
 		signature := calcHMAC(hs.Key, value, expectedEpoch)
 
 		if signature != expectedSignature {
-			hs.log("Signature mismatch %s (calculated=%s, header=%s)", expectedSignature, signature, header)
+			hs.log(r, "Signature mismatch %s (calculated=%s, header=%s)", expectedSignature, signature, header)
 			hs.writeInvalid(w)
 			return
 		}

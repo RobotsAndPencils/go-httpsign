@@ -173,7 +173,7 @@ func TestVerifyLogs(t *testing.T) {
 	key := []byte(randomString(100))
 	hs := New(key)
 	var lastLogMsg string
-	hs.LogHook = func(msg string) {
+	hs.LogHook = func(r *http.Request, msg string) {
 		lastLogMsg = msg
 	}
 
